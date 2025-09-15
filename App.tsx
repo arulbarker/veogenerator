@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { ModelVersion, GenerationType, GeneratedVideo } from './types';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { ModelVersion, GenerationType, VideoOrientation, GeneratedVideo, GenerationStatus } from './types';
 import { MOCK_VIDEO_URL } from './constants';
 import { generateVideo } from './services/geminiService';
 import LoadingOverlay from './components/LoadingOverlay';
@@ -14,11 +14,13 @@ const ControlPanel: React.FC<{
   setModelVersion: (m: ModelVersion) => void;
   generationType: GenerationType;
   setGenerationType: (t: GenerationType) => void;
+  videoOrientation: VideoOrientation;
+  setVideoOrientation: (o: VideoOrientation) => void;
   imageFile: File | null;
   setImageFile: (f: File | null) => void;
   onGenerate: () => void;
-  isLoading: boolean;
-}> = ({ apiKey, setApiKey, prompt, setPrompt, modelVersion, setModelVersion, generationType, setGenerationType, imageFile, setImageFile, onGenerate, isLoading }) => {
+  processingCount: number;
+}> = ({ apiKey, setApiKey, prompt, setPrompt, modelVersion, setModelVersion, generationType, setGenerationType, videoOrientation, setVideoOrientation, imageFile, setImageFile, onGenerate, processingCount }) => {
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -72,6 +74,15 @@ const ControlPanel: React.FC<{
         </div>
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-3">Video Orientation</label>
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+             {(Object.values(VideoOrientation)).map(o => (
+                <button key={o} onClick={() => setVideoOrientation(o)} className={`${buttonStyle} ${videoOrientation === o ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/25' : 'text-slate-300 hover:text-white'}`}>{o}</button>
+            ))}
+        </div>
+      </div>
+
       {generationType === GenerationType.IMAGE_TO_VIDEO && (
         <div>
           <label htmlFor="imageUpload" className={`${buttonStyle} text-slate-300 hover:text-white cursor-pointer block border-dashed border-2`}>
@@ -81,21 +92,75 @@ const ControlPanel: React.FC<{
         </div>
       )}
 
-      <button onClick={onGenerate} disabled={isLoading || !apiKey || !prompt || (generationType === GenerationType.IMAGE_TO_VIDEO && !imageFile)}
-        className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-        {isLoading ? 'Generating...' : 'Generate Video'}
-      </button>
+      <div className="space-y-2">
+        <button onClick={onGenerate} disabled={!apiKey || !prompt || (generationType === GenerationType.IMAGE_TO_VIDEO && !imageFile)}
+          className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+          Generate Video
+        </button>
+        {processingCount > 0 && (
+          <p className="text-center text-sm text-slate-400">
+            {processingCount} video{processingCount > 1 ? 's' : ''} generating in background...
+          </p>
+        )}
+      </div>
     </div>
   );
 };
 
 const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
+    const downloadVideo = async (video: GeneratedVideo) => {
+        if (!video.url) return;
+
+        try {
+            const response = await fetch(video.url);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `veo-video-${video.id}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download failed:', error);
+        }
+    };
+
+    const getStatusIcon = (status: GenerationStatus) => {
+        switch (status) {
+            case GenerationStatus.PROCESSING:
+                return (
+                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                );
+            case GenerationStatus.COMPLETED:
+                return (
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                );
+            case GenerationStatus.FAILED:
+                return (
+                    <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                );
+            default:
+                return (
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                );
+        }
+    };
+
     if (history.length === 0) {
         return (
             <div className="glass-panel p-6 flex flex-col items-center justify-center h-full text-center">
                 <div className="w-16 h-16 mb-4 text-slate-400">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2v8a2 2 0 002 2z" />
                     </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-slate-300 mb-2">No Videos Yet</h3>
@@ -115,14 +180,50 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
             <div className="space-y-4">
                 {history.map(video => (
                     <div key={video.id} className="relative bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
-                        {video.isSample && (
-                            <div className="absolute top-3 right-3 bg-amber-500 text-amber-900 text-xs font-medium px-2 py-1 rounded-full">Sample</div>
+                        <div className="flex items-center gap-2 mb-3">
+                            {getStatusIcon(video.status)}
+                            <span className="text-xs font-medium capitalize text-slate-400">
+                                {video.status === GenerationStatus.PROCESSING ? 'Generating...' : video.status}
+                            </span>
+                            {video.isSample && (
+                                <div className="bg-amber-500 text-amber-900 text-xs font-medium px-2 py-1 rounded-full ml-auto">Sample</div>
+                            )}
+                        </div>
+
+                        {video.status === GenerationStatus.COMPLETED && video.url ? (
+                            <div className="space-y-3">
+                                <video controls src={video.url} className="w-full rounded-lg bg-black"></video>
+                                <div className="flex items-center justify-between">
+                                    <button
+                                        onClick={() => downloadVideo(video)}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                        ) : video.status === GenerationStatus.FAILED ? (
+                            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 text-red-300 text-sm">
+                                Generation failed: {video.error || 'Unknown error'}
+                            </div>
+                        ) : (
+                            <div className="bg-slate-700/30 rounded-lg p-8 flex items-center justify-center text-slate-400">
+                                <div className="text-center">
+                                    <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                    <p className="text-sm">Processing video...</p>
+                                </div>
+                            </div>
                         )}
-                        <video controls src={video.url} className="w-full rounded-lg mb-3 bg-black"></video>
-                        <p className="text-sm text-slate-300 font-medium mb-2">"{video.prompt}"</p>
-                        <div className="flex justify-between text-xs text-slate-400">
-                            <span className="font-mono">{video.model} • {video.type}</span>
-                            <span>{video.timestamp}</span>
+
+                        <div className="mt-3">
+                            <p className="text-sm text-slate-300 font-medium mb-2">"{video.prompt}"</p>
+                            <div className="flex justify-between text-xs text-slate-400">
+                                <span className="font-mono">{video.model} • {video.type} • {video.orientation}</span>
+                                <span>{video.timestamp}</span>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -137,86 +238,124 @@ const App: React.FC = () => {
   const [prompt, setPrompt] = useState<string>('');
   const [modelVersion, setModelVersion] = useState<ModelVersion>(ModelVersion.VEO2);
   const [generationType, setGenerationType] = useState<GenerationType>(GenerationType.TEXT_TO_VIDEO);
+  const [videoOrientation, setVideoOrientation] = useState<VideoOrientation>(VideoOrientation.HORIZONTAL);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const [error, setError] = useState<string>('');
   const [notification, setNotification] = useState<string>('');
   const [history, setHistory] = useState<GeneratedVideo[]>([]);
+  const generationQueue = useRef<Set<string>>(new Set());
   
   // Effect to clean up blob URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       history.forEach(video => {
-        if (video.url.startsWith('blob:')) {
+        if (video.url && video.url.startsWith('blob:')) {
           URL.revokeObjectURL(video.url);
         }
       });
     };
   }, [history]);
 
-  const handleGenerate = useCallback(async () => {
-    setError('');
-    setNotification('');
-    setIsLoading(true);
+  const processingCount = history.filter(video => video.status === GenerationStatus.PROCESSING).length;
 
+  const processVideoGeneration = useCallback(async (videoId: string, params: {
+    apiKey: string;
+    prompt: string;
+    model: ModelVersion;
+    orientation: VideoOrientation;
+    type: GenerationType;
+    imageFile?: File;
+  }) => {
     try {
+      generationQueue.current.add(videoId);
+
       const videoUrl = await generateVideo({
-        apiKey,
-        prompt,
-        model: modelVersion,
-        imageFile: generationType === GenerationType.IMAGE_TO_VIDEO ? imageFile! : undefined,
+        apiKey: params.apiKey,
+        prompt: params.prompt,
+        model: params.model,
+        orientation: params.orientation,
+        imageFile: params.imageFile,
       });
 
-      const newVideo: GeneratedVideo = {
-        id: new Date().toISOString(),
-        url: videoUrl,
-        prompt,
-        model: modelVersion,
-        type: generationType,
-        timestamp: new Date().toLocaleString(),
-      };
-
-      setHistory(prev => [newVideo, ...prev]);
+      setHistory(prev => prev.map(video =>
+        video.id === videoId
+          ? { ...video, status: GenerationStatus.COMPLETED, url: videoUrl }
+          : video
+      ));
 
     } catch (err: any) {
       let errorMessage = err.message || 'An unknown error occurred during video generation.';
-       if (typeof errorMessage === 'string') {
-          if (errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-            // Smart Fallback: Show a notification and a sample video instead of a hard error
-            setNotification('API Quota Limit Reached. Displaying a sample video instead. Please check your Google AI Studio dashboard.');
-            const sampleVideo: GeneratedVideo = {
-              id: new Date().toISOString(),
-              url: MOCK_VIDEO_URL,
-              prompt: prompt,
-              model: modelVersion,
-              type: generationType,
-              timestamp: new Date().toLocaleString(),
-              isSample: true,
-            };
-            setHistory(prev => [sampleVideo, ...prev]);
-          } else {
-            // Handle other errors normally
-            if (errorMessage.includes('API key not valid')) {
-              errorMessage = 'The API Key provided is not valid. Please check for typos or generate a new key from Google AI Studio.';
-            } else if (errorMessage.includes('permission to access')) {
-              errorMessage = 'The API key does not have permission for this model or service. Please ensure the Generative Language API is enabled in your Google Cloud project.';
-            }
-            setError(`Generation Failed: ${errorMessage}`);
+
+      if (typeof errorMessage === 'string') {
+        if (errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+          // Smart Fallback: Show a notification and use sample video
+          setNotification('API Quota Limit Reached. Displaying a sample video instead. Please check your Google AI Studio dashboard.');
+          setHistory(prev => prev.map(video =>
+            video.id === videoId
+              ? { ...video, status: GenerationStatus.COMPLETED, url: MOCK_VIDEO_URL, isSample: true }
+              : video
+          ));
+        } else {
+          // Handle other errors normally
+          if (errorMessage.includes('API key not valid')) {
+            errorMessage = 'The API Key provided is not valid. Please check for typos or generate a new key from Google AI Studio.';
+          } else if (errorMessage.includes('permission to access')) {
+            errorMessage = 'The API key does not have permission for this model or service. Please ensure the Generative Language API is enabled in your Google Cloud project.';
           }
-       } else {
-         setError(`Generation Failed: ${errorMessage}`);
-       }
+
+          setHistory(prev => prev.map(video =>
+            video.id === videoId
+              ? { ...video, status: GenerationStatus.FAILED, error: errorMessage }
+              : video
+          ));
+        }
+      } else {
+        setHistory(prev => prev.map(video =>
+          video.id === videoId
+            ? { ...video, status: GenerationStatus.FAILED, error: 'Unknown error occurred' }
+            : video
+        ));
+      }
     } finally {
-      setIsLoading(false);
+      generationQueue.current.delete(videoId);
     }
-  }, [apiKey, prompt, modelVersion, generationType, imageFile]);
+  }, []);
+
+  const handleGenerate = useCallback(() => {
+    setError('');
+    setNotification('');
+
+    const videoId = `video-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    // Create pending video entry
+    const newVideo: GeneratedVideo = {
+      id: videoId,
+      prompt,
+      model: modelVersion,
+      type: generationType,
+      orientation: videoOrientation,
+      timestamp: new Date().toLocaleString(),
+      status: GenerationStatus.PROCESSING,
+    };
+
+    setHistory(prev => [newVideo, ...prev]);
+
+    // Start background processing
+    processVideoGeneration(videoId, {
+      apiKey,
+      prompt,
+      model: modelVersion,
+      orientation: videoOrientation,
+      type: generationType,
+      imageFile: generationType === GenerationType.IMAGE_TO_VIDEO ? imageFile! : undefined,
+    });
+
+  }, [apiKey, prompt, modelVersion, generationType, videoOrientation, imageFile, processVideoGeneration]);
 
   return (
     <div className="min-h-screen p-4 sm:p-8">
       <div className="relative container mx-auto max-w-7xl">
-        {isLoading && <LoadingOverlay />}
-
         <header className="text-center mb-12">
           <h1 className="text-5xl sm:text-6xl font-bold mb-4 professional-glow">Veo Generator</h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">Transform your ideas into stunning videos with Google's Veo AI models</p>
@@ -253,9 +392,10 @@ const App: React.FC = () => {
               prompt={prompt} setPrompt={setPrompt}
               modelVersion={modelVersion} setModelVersion={setModelVersion}
               generationType={generationType} setGenerationType={setGenerationType}
+              videoOrientation={videoOrientation} setVideoOrientation={setVideoOrientation}
               imageFile={imageFile} setImageFile={setImageFile}
               onGenerate={handleGenerate}
-              isLoading={isLoading}
+              processingCount={processingCount}
             />
           </section>
           <section className="order-1 lg:order-2 max-h-[50vh] lg:max-h-[80vh]">

@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { ModelVersion } from '../types';
+import { ModelVersion, VideoOrientation } from '../types';
 import { MODEL_MAP } from '../constants';
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -19,10 +19,11 @@ interface GenerateVideoParams {
   apiKey: string;
   prompt: string;
   model: ModelVersion;
+  orientation: VideoOrientation;
   imageFile?: File;
 }
 
-export const generateVideo = async ({ apiKey, prompt, model, imageFile }: GenerateVideoParams): Promise<string> => {
+export const generateVideo = async ({ apiKey, prompt, model, orientation, imageFile }: GenerateVideoParams): Promise<string> => {
   if (!apiKey) {
     throw new Error('API Key is required to generate video.');
   }
@@ -30,11 +31,14 @@ export const generateVideo = async ({ apiKey, prompt, model, imageFile }: Genera
   const ai = new GoogleGenAI({ apiKey });
   const modelName = MODEL_MAP[model];
 
+  const aspectRatio = orientation === VideoOrientation.VERTICAL ? '9:16' : '16:9';
+
   const generateVideosParams: any = {
     model: modelName,
     prompt,
     config: {
       numberOfVideos: 1,
+      aspectRatio: aspectRatio,
     }
   };
 
