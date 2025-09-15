@@ -110,7 +110,11 @@ const ControlPanel: React.FC<{
 const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
     const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
-    const downloadVideo = async (video: GeneratedVideo) => {
+    const downloadVideo = async (event: React.MouseEvent, video: GeneratedVideo) => {
+        // Prevent any default button behavior that might cause refresh
+        event.preventDefault();
+        event.stopPropagation();
+
         if (!video.url) return;
 
         const fileName = `veo-video-${video.id.slice(-8)}.mp4`;
@@ -119,8 +123,15 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
         setDownloadingIds(prev => new Set(prev).add(video.id));
 
         try {
-            // Fetch the video data
-            const response = await fetch(video.url);
+            // Fetch the video data in background
+            const response = await fetch(video.url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/octet-stream',
+                },
+                cache: 'no-cache'
+            });
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
@@ -135,35 +146,44 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
             // Create blob URL for download
             const blobUrl = window.URL.createObjectURL(blob);
 
-            // Create download link and trigger download
+            // Create download link and trigger download without affecting page
             const downloadLink = document.createElement('a');
             downloadLink.href = blobUrl;
             downloadLink.download = fileName;
             downloadLink.style.display = 'none';
+            downloadLink.rel = 'noopener noreferrer';
 
-            // Add to DOM, click, then remove immediately
+            // Add to DOM temporarily, click, then remove
             document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
 
-            // Clean up blob URL after download starts
+            // Use setTimeout to ensure DOM is ready
             setTimeout(() => {
-                window.URL.revokeObjectURL(blobUrl);
-            }, 1000);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                // Clean up blob URL after a delay
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(blobUrl);
+                }, 2000);
+            }, 100);
 
         } catch (error) {
             console.error('Download failed:', error);
 
-            // Show user-friendly error message
+            // Show user-friendly error message without affecting the page
             const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Download gagal: ${errorMsg}\n\nSilakan coba klik kanan pada video dan pilih "Save video as..."`);
+            setTimeout(() => {
+                alert(`Download gagal: ${errorMsg}\n\nSilakan coba klik kanan pada video dan pilih "Save video as..."`);
+            }, 100);
         } finally {
-            // Remove video from downloading state
-            setDownloadingIds(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(video.id);
-                return newSet;
-            });
+            // Remove video from downloading state after a delay to show feedback
+            setTimeout(() => {
+                setDownloadingIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(video.id);
+                    return newSet;
+                });
+            }, 500);
         }
     };
 
@@ -243,8 +263,9 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
                                 ></video>
                                 <div className="flex items-center justify-between">
                                     <button
-                                        onClick={() => downloadVideo(video)}
+                                        onClick={(e) => downloadVideo(e, video)}
                                         disabled={downloadingIds.has(video.id)}
+                                        type="button"
                                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
                                     >
                                         {downloadingIds.has(video.id) ? (
