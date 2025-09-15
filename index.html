@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Veo Video Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #f8fafc;
+        min-height: 100vh;
+      }
+      h1, h2, h3, .font-display {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+      }
+      .font-mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .professional-glow {
+        text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+      }
+      .subtle-glow {
+        text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+      }
+      .glass-panel {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 16px;
+        box-shadow:
+          0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05),
+          inset 0 1px 0 rgba(148, 163, 184, 0.1);
+      }
+      .gradient-border {
+        position: relative;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+        border-radius: 12px;
+        padding: 1px;
+      }
+      .gradient-border::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 1px;
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        border-radius: inherit;
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask-composite: subtract;
+      }
+
+      @keyframes glitch-anim-1 {
+        0%, 100% { clip-path: inset(39% 0 41% 0); }
+        20% { clip-path: inset(59% 0 31% 0); }
+        40% { clip-path: inset(29% 0 51% 0); }
+        60% { clip-path: inset(19% 0 21% 0); }
+        80% { clip-path: inset(79% 0 11% 0); }
+      }
+      @keyframes glitch-anim-2 {
+        0%, 100% { clip-path: inset(19% 0 71% 0); }
+        20% { clip-path: inset(39% 0 11% 0); }
+        40% { clip-path: inset(89% 0 1% 0); }
+        60% { clip-path: inset(49% 0 41% 0); }
+        80% { clip-path: inset(9% 0 81% 0); }
+      }
+      .animate-glitch-1 { animation: glitch-anim-1 2.5s infinite; }
+      .animate-glitch-2 { animation: glitch-anim-2 3s infinite; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="min-h-screen overflow-x-hidden">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

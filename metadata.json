@@ -1,0 +1,5 @@
+{
+  "name": "Cyberpunk Veo Video Generator",
+  "description": "A futuristic, cyberpunk-themed web application to generate videos from text or images using Google's Veo models. Users can select models, orientation, and view a history of their creations.",
+  "requestFramePermissions": []
+}
