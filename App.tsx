@@ -108,23 +108,80 @@ const ControlPanel: React.FC<{
 };
 
 const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
+    const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+
     const downloadVideo = async (video: GeneratedVideo) => {
         if (!video.url) return;
 
+        const fileName = `veo-video-${video.id.slice(-8)}.mp4`;
+
+        // Add video to downloading state
+        setDownloadingIds(prev => new Set(prev).add(video.id));
+
         try {
+            // Method 1: Try direct blob download (works on most desktop browsers)
             const response = await fetch(video.url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const blob = await response.blob();
+
+            // Check if we have a video blob
+            if (blob.size === 0) {
+                throw new Error('Video file is empty');
+            }
+
             const url = window.URL.createObjectURL(blob);
 
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `veo-video-${video.id}.mp4`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            // Try HTML5 download attribute first (works on desktop)
+            if ('download' in document.createElement('a')) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                return;
+            }
+
+            // Fallback for mobile browsers
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Clean up after a delay to allow download to start
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+            }, 100);
+
         } catch (error) {
             console.error('Download failed:', error);
+
+            // Final fallback: open video in new tab (mobile-friendly)
+            try {
+                const newWindow = window.open(video.url, '_blank', 'noopener,noreferrer');
+                if (!newWindow) {
+                    // If popup blocked, try direct navigation
+                    window.location.href = video.url;
+                }
+            } catch (fallbackError) {
+                console.error('Fallback download failed:', fallbackError);
+                alert('Download failed. Please try right-clicking the video and selecting "Save video as..."');
+            }
+        } finally {
+            // Remove video from downloading state
+            setDownloadingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(video.id);
+                return newSet;
+            });
         }
     };
 
@@ -192,17 +249,76 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
 
                         {video.status === GenerationStatus.COMPLETED && video.url ? (
                             <div className="space-y-3">
-                                <video controls src={video.url} className="w-full rounded-lg bg-black"></video>
-                                <div className="flex items-center justify-between">
+                                <video
+                                    controls
+                                    src={video.url}
+                                    className="w-full rounded-lg bg-black"
+                                    controlsList="download"
+                                    onContextMenu={(e) => {
+                                        // Allow right-click on video for native save options
+                                        e.stopPropagation();
+                                    }}
+                                ></video>
+                                <div className="flex items-center gap-2 flex-wrap">
                                     <button
                                         onClick={() => downloadVideo(video)}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                        disabled={downloadingIds.has(video.id)}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        {downloadingIds.has(video.id) ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Downloading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg>
+                                                Download
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Share button for mobile browsers */}
+                                    {'share' in navigator && (
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    await (navigator as any).share({
+                                                        title: 'Veo Generated Video',
+                                                        text: `Check out this video: "${video.prompt}"`,
+                                                        url: video.url
+                                                    });
+                                                } catch (err) {
+                                                    // Share API not supported or user cancelled
+                                                    console.log('Share failed:', err);
+                                                }
+                                            }}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                                            </svg>
+                                            Share
+                                        </button>
+                                    )}
+
+                                    {/* Open in new tab button - universal fallback */}
+                                    <button
+                                        onClick={() => window.open(video.url, '_blank', 'noopener,noreferrer')}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                         </svg>
-                                        Download
+                                        Open
                                     </button>
+                                </div>
+
+                                {/* Mobile download hint */}
+                                <div className="md:hidden text-xs text-slate-400 bg-slate-800/50 p-2 rounded border border-slate-700">
+                                    💡 On mobile: Tap "Open" or long-press the video and select "Save video"
                                 </div>
                             </div>
                         ) : video.status === GenerationStatus.FAILED ? (

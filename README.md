@@ -13,7 +13,7 @@ A modern, professional web application for generating videos using Google's Veo 
 - 🖼️ **Image-to-Video**: Transform static images into dynamic videos
 - 🔄 **Background Processing**: Generate multiple videos simultaneously without waiting
 - 📐 **Video Orientation**: Choose between horizontal (16:9) or vertical (9:16) formats
-- 💾 **Download Videos**: Direct download button for completed videos
+- 💾 **Universal Download**: Smart download system that works on desktop and mobile with fallback options
 - 📱 **Responsive Design**: Professional UI that works on all devices
 - 📊 **Generation Status**: Real-time status tracking with visual indicators
 - ⚡ **Fast & Modern**: Built with React 19, TypeScript, and Vite
