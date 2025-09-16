@@ -5,6 +5,12 @@ export const MODEL_MAP: Record<ModelVersion, string> = {
   [ModelVersion.VEO3]: 'veo-3.0-generate-preview',
 };
 
+// Default resolution settings for each model
+export const MODEL_RESOLUTION_MAP: Record<ModelVersion, string> = {
+  [ModelVersion.VEO2]: '720p',
+  [ModelVersion.VEO3]: '1080p', // Veo 3 supports 1080p HD by default
+};
+
 export const LOADING_MESSAGES: string[] = [
   'Initializing AI model...',
   'Processing your prompt...',

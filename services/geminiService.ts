@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { ModelVersion, VideoOrientation } from '../types';
-import { MODEL_MAP } from '../constants';
+import { MODEL_MAP, MODEL_RESOLUTION_MAP } from '../constants';
 
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -32,6 +32,7 @@ export const generateVideo = async ({ apiKey, prompt, model, orientation, imageF
   const modelName = MODEL_MAP[model];
 
   const aspectRatio = orientation === VideoOrientation.VERTICAL ? '9:16' : '16:9';
+  const resolution = MODEL_RESOLUTION_MAP[model];
 
   const generateVideosParams: any = {
     model: modelName,
@@ -39,6 +40,7 @@ export const generateVideo = async ({ apiKey, prompt, model, orientation, imageF
     config: {
       numberOfVideos: 1,
       aspectRatio: aspectRatio,
+      resolution: resolution, // Use appropriate resolution based on model
     }
   };
 
