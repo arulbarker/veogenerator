@@ -32,7 +32,6 @@ export const generateVideo = async ({ apiKey, prompt, model, orientation, imageF
   const modelName = MODEL_MAP[model];
 
   const aspectRatio = orientation === VideoOrientation.VERTICAL ? '9:16' : '16:9';
-  const resolution = MODEL_RESOLUTION_MAP[model];
 
   const generateVideosParams: any = {
     model: modelName,
@@ -40,9 +39,13 @@ export const generateVideo = async ({ apiKey, prompt, model, orientation, imageF
     config: {
       numberOfVideos: 1,
       aspectRatio: aspectRatio,
-      resolution: resolution, // Use appropriate resolution based on model
     }
   };
+
+  // Only add resolution parameter for Veo 3 models that support it
+  if (model === ModelVersion.VEO3) {
+    generateVideosParams.config.resolution = MODEL_RESOLUTION_MAP[model];
+  }
 
   if (imageFile) {
     const base64Image = await fileToBase64(imageFile);

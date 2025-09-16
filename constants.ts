@@ -2,7 +2,7 @@ import { ModelVersion } from './types';
 
 export const MODEL_MAP: Record<ModelVersion, string> = {
   [ModelVersion.VEO2]: 'veo-2.0-generate-001',
-  [ModelVersion.VEO3]: 'veo-3.0-fast-generate-preview',
+  [ModelVersion.VEO3]: 'veo-3.0-generate-001',
 };
 
 // Default resolution settings for each model
