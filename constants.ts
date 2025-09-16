@@ -5,10 +5,12 @@ export const MODEL_MAP: Record<ModelVersion, string> = {
   [ModelVersion.VEO3]: 'veo-3.0-generate-001',
 };
 
-// Default resolution settings for each model
+// Resolution settings based on model and aspect ratio
+// Veo 3: 1080p for 16:9, 720p for 9:16
+// Veo 2: 720p only (no resolution parameter)
 export const MODEL_RESOLUTION_MAP: Record<ModelVersion, string> = {
   [ModelVersion.VEO2]: '720p',
-  [ModelVersion.VEO3]: '1080p', // Veo 3 supports 1080p HD by default
+  [ModelVersion.VEO3]: '1080p', // Max resolution, adjusted dynamically based on aspect ratio
 };
 
 export const LOADING_MESSAGES: string[] = [
