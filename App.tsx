@@ -238,7 +238,7 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
             </h2>
             <div className="space-y-4">
                 {history.map(video => (
-                    <div key={video.id} className="relative bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+                    <div key={video.id} className="relative bg-slate-800/30 rounded-lg p-4 border border-slate-700/50" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2 mb-3">
                             {getStatusIcon(video.status)}
                             <span className="text-xs font-medium capitalize text-slate-400">
@@ -252,14 +252,30 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
                         {video.status === GenerationStatus.COMPLETED && video.url ? (
                             <div className="space-y-3">
                                 <video
+                                    key={`video-${video.id}-${video.url}`}
                                     controls
                                     src={video.url}
                                     className="w-full rounded-lg bg-black"
                                     controlsList="download"
+                                    preload="metadata"
+                                    playsInline
                                     onContextMenu={(e) => {
                                         // Allow right-click on video for native save options
                                         e.stopPropagation();
                                     }}
+                                    onClick={(e) => {
+                                        // Prevent event bubbling that might interfere with video controls
+                                        e.stopPropagation();
+                                    }}
+                                    onPlay={(e) => {
+                                        // Ensure video doesn't get interrupted by other events
+                                        e.stopPropagation();
+                                    }}
+                                    onPause={(e) => {
+                                        // Prevent pause event from bubbling up
+                                        e.stopPropagation();
+                                    }}
+                                    style={{ outline: 'none' }}
                                 ></video>
                                 <div className="flex items-center justify-between">
                                     <button
