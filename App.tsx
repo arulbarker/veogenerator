@@ -109,6 +109,7 @@ const ControlPanel: React.FC<{
 
 const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
     const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+    const [videoErrors, setVideoErrors] = useState<Set<string>>(new Set());
 
     const downloadVideo = async (event: React.MouseEvent, video: GeneratedVideo) => {
         // Prevent any default button behavior that might cause refresh
@@ -143,12 +144,12 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
                 throw new Error('Video file is empty');
             }
 
-            // Create blob URL for download
-            const blobUrl = window.URL.createObjectURL(blob);
+            // Create blob URL for download (separate from video src)
+            const downloadBlobUrl = window.URL.createObjectURL(blob);
 
             // Create download link and trigger download without affecting page
             const downloadLink = document.createElement('a');
-            downloadLink.href = blobUrl;
+            downloadLink.href = downloadBlobUrl;
             downloadLink.download = fileName;
             downloadLink.style.display = 'none';
             downloadLink.rel = 'noopener noreferrer';
@@ -161,9 +162,9 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
 
-                // Clean up blob URL after a delay
+                // Clean up download blob URL after a delay (NOT the video src URL)
                 setTimeout(() => {
-                    window.URL.revokeObjectURL(blobUrl);
+                    window.URL.revokeObjectURL(downloadBlobUrl);
                 }, 2000);
             }, 100);
 
@@ -251,8 +252,30 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
 
                         {video.status === GenerationStatus.COMPLETED && video.url ? (
                             <div className="space-y-3">
+                                {videoErrors.has(video.id) ? (
+                                    <div className="bg-slate-700/30 rounded-lg p-8 flex items-center justify-center text-slate-400 border border-red-500/30">
+                                        <div className="text-center">
+                                            <svg className="w-12 h-12 mx-auto mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <p className="text-sm text-red-300 mb-2">Video playback error</p>
+                                            <button
+                                                onClick={() => {
+                                                    setVideoErrors(prev => {
+                                                        const newSet = new Set(prev);
+                                                        newSet.delete(video.id);
+                                                        return newSet;
+                                                    });
+                                                }}
+                                                className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                                            >
+                                                Retry
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
                                 <video
-                                    key={`video-${video.id}-${video.url}`}
+                                    key={`video-${video.id}`}
                                     controls
                                     src={video.url}
                                     className="w-full rounded-lg bg-black"
@@ -275,8 +298,23 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
                                         // Prevent pause event from bubbling up
                                         e.stopPropagation();
                                     }}
+                                    onError={(e) => {
+                                        // Handle video loading errors
+                                        console.error('Video playback error for:', video.id, e);
+                                        setVideoErrors(prev => new Set(prev).add(video.id));
+                                        e.stopPropagation();
+                                    }}
+                                    onLoadStart={() => {
+                                        // Clear any previous errors when video starts loading
+                                        setVideoErrors(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.delete(video.id);
+                                            return newSet;
+                                        });
+                                    }}
                                     style={{ outline: 'none' }}
                                 ></video>
+                                )}
                                 <div className="flex items-center justify-between">
                                     <button
                                         onClick={(e) => downloadVideo(e, video)}
@@ -346,6 +384,7 @@ const App: React.FC = () => {
   const generationQueue = useRef<Set<string>>(new Set());
   
   // Effect to clean up blob URLs to prevent memory leaks
+  // Only cleanup when component unmounts, not when history changes
   useEffect(() => {
     return () => {
       history.forEach(video => {
@@ -354,7 +393,7 @@ const App: React.FC = () => {
         }
       });
     };
-  }, [history]);
+  }, []); // Remove history dependency to prevent premature cleanup
 
   const processingCount = history.filter(video => video.status === GenerationStatus.PROCESSING).length;
 
