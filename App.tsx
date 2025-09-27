@@ -418,7 +418,7 @@ const DevInfo: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
 
         <div className="mt-4 pt-4 border-t border-slate-600">
           <p className="text-xs text-slate-500 text-center">
-            🎬 Veo 2: 720p Quality • Veo 3: 1080p Quality<br/>
+            🎬 Veo 2: 720p Quality • Veo 3: 1080p (16:9) / 720p (9:16)<br/>
             Powered by Google Gemini Veo API
           </p>
         </div>
