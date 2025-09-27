@@ -369,6 +369,63 @@ const HistoryPanel: React.FC<{ history: GeneratedVideo[] }> = ({ history }) => {
     );
 };
 
+const DevInfo: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  const socialLinks = [
+    { name: 'YouTube', url: 'https://www.youtube.com/@arulcg', icon: '📺' },
+    { name: 'Instagram', url: 'https://www.instagram.com/arul.cg/', icon: '📷' },
+    { name: 'Facebook', url: 'https://www.facebook.com/profile.php?id=61578938703730', icon: '👥' },
+    { name: 'Threads', url: 'https://www.threads.com/@arul.cg', icon: '🧵' },
+    { name: 'X (Twitter)', url: 'https://x.com/ArulCg', icon: '🐦' },
+    { name: 'LYNKID', url: 'https://lynk.id/arullagi', icon: '🔗' },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="glass-panel max-w-md w-full p-6 rounded-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-white">Developer Support</h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="text-center mb-4">
+          <p className="text-slate-300 text-sm">Created by <span className="font-semibold text-blue-400">Arul CG</span></p>
+          <p className="text-slate-400 text-xs mt-1">Support me by following on social media</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {socialLinks.map((link) => (
+            <a
+              key={link.name}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600 hover:border-blue-500 rounded-lg transition-all duration-200 text-slate-300 hover:text-white text-sm"
+            >
+              <span className="text-lg">{link.icon}</span>
+              <span className="font-medium">{link.name}</span>
+            </a>
+          ))}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-600">
+          <p className="text-xs text-slate-500 text-center">
+            🎬 Veo 2: 720p Quality • Veo 3: 1080p Quality<br/>
+            Powered by Google Gemini Veo API
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>('');
@@ -381,6 +438,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [notification, setNotification] = useState<string>('');
   const [history, setHistory] = useState<GeneratedVideo[]>([]);
+  const [showDevInfo, setShowDevInfo] = useState<boolean>(false);
   const generationQueue = useRef<Set<string>>(new Set());
   
   // Effect to clean up blob URLs to prevent memory leaks
@@ -494,7 +552,19 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen p-4 sm:p-8">
       <div className="relative container mx-auto max-w-7xl">
-        <header className="text-center mb-12">
+        <header className="text-center mb-12 relative">
+          <div className="absolute top-0 right-0">
+            <button
+              onClick={() => setShowDevInfo(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600 hover:border-blue-500 rounded-lg transition-all duration-200 text-slate-300 hover:text-white text-sm"
+              title="Developer Support"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span>Support Dev</span>
+            </button>
+          </div>
           <h1 className="text-5xl sm:text-6xl font-bold mb-4 professional-glow">Veo Generator</h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">Transform your ideas into stunning videos with Google's Veo AI models</p>
         </header>
@@ -540,6 +610,8 @@ const App: React.FC = () => {
             <HistoryPanel history={history} />
           </section>
         </main>
+
+        <DevInfo isOpen={showDevInfo} onClose={() => setShowDevInfo(false)} />
       </div>
     </div>
   );

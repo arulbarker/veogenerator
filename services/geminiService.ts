@@ -42,15 +42,13 @@ export const generateVideo = async ({ apiKey, prompt, model, orientation, imageF
     }
   };
 
-  // Only add resolution parameter for Veo 3 models that support it
-  if (model === ModelVersion.VEO3) {
-    // 1080p is only supported for horizontal (16:9) videos
-    // Vertical (9:16) videos use 720p
-    if (aspectRatio === '16:9') {
-      generateVideosParams.config.resolution = '1080p';
-    } else {
-      generateVideosParams.config.resolution = '720p';
-    }
+  // Add resolution parameter based on model version
+  if (model === ModelVersion.VEO2) {
+    // Veo 2: 720p for all orientations
+    generateVideosParams.config.resolution = '720p';
+  } else if (model === ModelVersion.VEO3) {
+    // Veo 3: 1080p for all orientations (high quality)
+    generateVideosParams.config.resolution = '1080p';
   }
 
   if (imageFile) {
