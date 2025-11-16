@@ -42,6 +42,57 @@ const ControlPanel: React.FC<{
           placeholder="Enter your Google AI API Key"
           className="w-full bg-slate-800/50 border border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white px-4 py-2.5 rounded-lg outline-none transition-all"
         />
+
+        {/* API Key Info & Pricing */}
+        <div className="mt-3 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg space-y-3">
+          <div className="flex items-start gap-2">
+            <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-xs text-slate-300 space-y-2">
+              <p>
+                <span className="font-semibold text-blue-300">Aplikasi ini menggunakan API Key Gemini Veo pribadi.</span> Anda bayar langsung ke Google sesuai pemakaian (pay-as-you-go).
+              </p>
+
+              <div className="bg-slate-800/50 p-2 rounded">
+                <p className="font-semibold text-blue-300 mb-1">💰 Harga (estimasi dalam Rupiah):</p>
+                <ul className="space-y-0.5 ml-4 text-slate-400">
+                  <li>• <span className="text-slate-300">Veo 2:</span> ~Rp 7.750/detik (~Rp 62.000 per 8 detik)</li>
+                  <li>• <span className="text-slate-300">Veo 3:</span> Rp 11.625/detik (Rp 93.000 per 8 detik)</li>
+                  <li>• <span className="text-slate-300">Veo 3 Fast:</span> Rp 6.200/detik (Rp 49.600 per 8 detik)</li>
+                </ul>
+                <p className="text-xs text-slate-500 mt-1 italic">*Kurs: 1 USD ≈ Rp 15.500</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Tutorial & Alternative Buttons */}
+          <div className="grid grid-cols-1 gap-2 pt-2 border-t border-blue-700/30">
+            <a
+              href="https://youtu.be/GYQLT5yAD7M?si=CyTUysdt8iKkY2GJ"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <span>📺 Tutorial: Cara Mendapatkan API Key Gemini</span>
+            </a>
+
+            <a
+              href="https://labs.google/fx/tools/flow"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-600/80 hover:bg-purple-600 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+              </svg>
+              <span>🎬 Alternatif: Google Labs Flow (Veo 3)</span>
+            </a>
+          </div>
+        </div>
       </div>
 
       <div>
